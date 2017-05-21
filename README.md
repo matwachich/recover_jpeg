@@ -6,7 +6,7 @@ It works by extracting the valid data (from 0xFFDA Start Of Scan) from the corru
 You'll have to provide models pictures files taken with the same camera with different resolutions, orientations and quality settings.
 
 # How to use
-Create a folder "__models__" asside the executable and fill it with the model files. Name them carefully because the model name is appended to the recovered picture (ex. s7-1080-paysage.jpg).
+Create a folder **\_\_models\_\_** asside the executable and fill it with the model files. Name them carefully because the model name is appended to the recovered picture (ex. s7-1080-paysage.jpg).
 
 Then, just drag the corrupted file on the executable. It will try to reconstruct jpeg files with all the models provided. There will be many invalid files asside the corrupted picture, but hopefully there will be one valid file.
 
