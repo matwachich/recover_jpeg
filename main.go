@@ -92,58 +92,30 @@ func firstOptions(file string) bool {
 	data = data[10240:]
 	data = data[:len(data)-36]
 
-	// 01: search for a 0xFFE0 marker in the file (last embeeded image, it should be the good one, not an embeeded thumbnail)
-	if id := bytes.LastIndex(data, []byte{0xFF, 0xE0}); id != -1 {
-		fmt.Printf(">> Option 01: 0xFFE0 found after 10kb\n")
-		newFile := gRegExp.ReplaceAllString(file, "") + "-option_FFE0.jpg"
-		hf, err := os.Create(newFile)
-		if err != nil {
-			fmt.Printf(">>>> Error: %v\n\n", err)
-			return false
-		}
-		hf.Write([]byte{0xFF, 0xD8})
-		hf.Write(data[id:])
-		hf.Close()
-
-		if askForConfirmation(fmt.Sprintf(">>>> %s created. Is it valid?", filepath.Base(newFile))) {
-			return true
-		}
-	}
-
-	// 02: find a 0xFFD9 (EOF) marker that is not the last
-	if idLast := bytes.LastIndex(data, []byte{0xFF, 0xD9}); idLast != -1 {
-		if id := bytes.LastIndex(data[:idLast-10], []byte{0xFF, 0xD9}); id != -1 {
-			fmt.Printf(">> Option 02: Found an EOF marker that is not the last one\n")
-
-			data = data[id+2:]
-
-			for {
-				id = bytes.Index(data, []byte{0xFF})
-				if id == -1 {
-					break
-				}
-
-				data = data[id+1:]
-				if data[0] >= 0xC0 && data[0] <= 0xDF {
-					break
-				}
+	// Good technique: find the last FFDA (SOS) and rewind markers before it until you find one that is not FFDB, FFC0 or FFC4.
+	// Then delete everything before these (essential) markers, and add a FFD8 (SOF)
+	if idSOS := bytes.LastIndex(data, []byte{0xFF, 0xDA}); idSOS != -1 {
+		lastId := -1
+		for i := idSOS - 1; i >= 0; i-- {
+			if data[i] == 0xFF && (data[i+1] == 0xDB || data[i+1] == 0xC0 || data[i+1] == 0xC4) {
+				lastId = i
 			}
-
-			if id == -1 {
-				fmt.Printf(">>            No valid marker after EOF\n\n")
-				return false
+			if data[i] == 0xFF && data[i+1] != 0xDB && data[i+1] != 0xC0 && data[i+1] != 0xC4 {
+				break
 			}
+		}
 
-			fmt.Printf(">>            Found valid marker after EOF (0x%02X%02X)", 0xFF, data[0])
+		if lastId != -1 {
+			fmt.Printf(">> Option 01: Found 0xFFDA (SOS) preceeded by some valid essential markers (0xFFDB, 0xFFC0, 0xFFC4)\n")
 
-			newFile := gRegExp.ReplaceAllString(file, "") + "-option_FFD9.jpg"
+			newFile := gRegExp.ReplaceAllString(file, "") + "-option_FFDA.jpg"
 			hf, err := os.Create(newFile)
 			if err != nil {
 				fmt.Printf(">>>> Error: %v\n\n", err)
 				return false
 			}
-			hf.Write([]byte{0xFF, 0xD8, 0xFF})
-			hf.Write(data)
+			hf.Write([]byte{0xFF, 0xD8})
+			hf.Write(data[lastId:])
 			hf.Close()
 
 			if askForConfirmation(fmt.Sprintf(">>>> %s created. Is it valid?", filepath.Base(newFile))) {
