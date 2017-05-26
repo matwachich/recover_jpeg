@@ -1,3 +1,6 @@
+# WARNING
+Before using this tool, please save your pictures first. I don't want to be held responsible for any accident...
+
 # Recover JPEG
 When you have a JPEG pictures that is corrupted because the begining of the file is lost (corrupted, encrypted...), this tool can help!
 
