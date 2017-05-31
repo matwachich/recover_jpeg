@@ -107,8 +107,20 @@ func firstOptions(file string) bool {
 
 		if lastId != -1 {
 			fmt.Printf(">> Option 01: Found 0xFFDA (SOS) preceeded by some valid essential markers (0xFFDB, 0xFFC0, 0xFFC4)\n")
+			
+			var buff bytes.Buffer
+			buff.Write([]byte{0xFF, 0xD8})
+			buff.Write(data[lastId:])
+			
+			// try to validate the reconstructed picture
+			_, err := jpeg.Decode(&buff)
+			if err != nil {
+				return false
+			}
 
 			newFile := gRegExp.ReplaceAllString(file, "") + "-option_FFDA.jpg"
+			fmt.Printf(">>>> %s validated\n", filepath.Base(newFile))
+			
 			hf, err := os.Create(newFile)
 			if err != nil {
 				fmt.Printf(">>>> Error: %v\n\n", err)
@@ -117,10 +129,12 @@ func firstOptions(file string) bool {
 			hf.Write([]byte{0xFF, 0xD8})
 			hf.Write(data[lastId:])
 			hf.Close()
+			
+			return true
 
-			if askForConfirmation(fmt.Sprintf(">>>> %s created. Is it valid?", filepath.Base(newFile))) {
+			/*if askForConfirmation(fmt.Sprintf(">>>> %s created. Is it valid?", filepath.Base(newFile))) {
 				return true
-			}
+			}*/
 		}
 	}
 
@@ -237,11 +251,10 @@ func askForConfirmation(s string) bool {
 			panic(err)
 		}
 
-		response = strings.ToLower(strings.TrimSpace(response))
-
-		if response == "y" || response == "yes" {
+		switch strings.ToLower(strings.TrimSpace(response)) {
+		case "y", "yes":
 			return true
-		} else if response == "n" || response == "no" {
+		case "n", "no":
 			return false
 		}
 	}
